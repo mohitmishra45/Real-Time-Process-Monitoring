@@ -1,321 +1,158 @@
+## Overview
+
+This project consists of two primary Python files that implement a graphical user interface (GUI) for monitoring system resource usage (CPU, memory, disk), with options to control system processes and configure alerts based on thresholds. The GUI is built using **Tkinter** for the interface and **Matplotlib** for rendering graphical gauges. Additionally, the system makes use of **psutil** to gather system performance data.
+
+### Features:
+- **Footer Section**: A footer UI component that offers control over system processes, system alerts, and refresh rate configuration.
+- **System Gauges**: Graphical representation of system resources like CPU, memory, and disk usage, updated dynamically.
+- **Customizable Alerts**: Allows users to set custom threshold values for CPU, memory, and disk usage to trigger alerts.
+- **Refresh Rate**: Provides the option to configure the update interval for system data.
+  
+---
+
+## Files
+
+### 1. **Footer Class**
+
+The `Footer` class is responsible for creating the footer section of the user interface. It includes several widgets such as buttons and labels to interact with the system:
+
+#### Key Components:
+- **Process Controls**: 
+  - `Kill Process`: Button to terminate a system process.
+  - `Process Details`: Button to view process details.
+  - `Export Process List`: Button to export a list of running processes.
+  
+- **System Alerts**:
+  - Input fields to set custom thresholds for CPU, memory, and disk usage.
+  - `Apply` button to apply these threshold values.
+  
+- **Refresh Rate**:
+  - Input field to set the update interval for system resource monitoring.
+  
+The `Footer` class interacts with the `app` object to trigger actions like killing processes, showing process details, and exporting data.
+
+#### Methods:
+- **`apply_thresholds()`**: Applies custom thresholds for CPU, memory, and disk.
+- **`get_refresh_rate()`**: Retrieves the refresh rate value set by the user.
+
+### 2. **System Gauges**
+
+The functions `create_gauge` and `update_gauge` are responsible for creating and updating graphical gauges that show the current usage of CPU, memory, and disk.
+
+#### Key Components:
+- **`create_gauge(parent, theme, label)`**:
+  - Creates a gauge widget for the specified system resource (CPU, memory, or disk).
+  - The function uses Matplotlib to draw a circular gauge with customizable colors based on usage levels.
+
+- **`update_gauge(ax, percent, label, theme)`**:
+  - Updates the gauge to reflect the current usage of the selected system resource.
+  - The gauge color changes depending on usage:
+    - **Green** for less than 60%
+    - **Yellow** for 60-80%
+    - **Red** for above 80%
+  - Displays additional information such as CPU core count, memory usage, and free disk space.
+
+### 3. **Utility Functions**
+
+Several utility functions are provided to modify colors for visual effects:
+- **`darken_color(hex_color)`**: Darkens a given hex color.
+- **`lighten_color(hex_color)`**: Lightens a given hex color.
+- **`blend_colors(color1, color2, ratio)`**: Blends two colors based on the given ratio.
+
+These utilities are used to adjust the appearance of the gauges and interface elements dynamically.
+
+---
+
+## Requirements
+
+- Python 3.x
+- **Tkinter**: For creating the GUI.
+- **Matplotlib**: For rendering gauges.
+- **psutil**: For retrieving system performance data.
+- **platform**: For platform-specific disk handling.
+- **os**: For environment-related tasks.
+
+Install required packages using `pip`:
+```bash
+pip install matplotlib psutil
+```
+
+---
+
+## Usage
+
+1. **Integrating the Footer Class**: 
+   - The `Footer` class is designed to be used within an application that uses Tkinter for the main interface. 
+   - Create an instance of the `Footer` class and pass the main window (`root`) and the app object that contains the logic for handling processes and alerts.
+
+2. **System Resource Monitoring**:
+   - Gauges for CPU, memory, and disk usage are automatically created and updated based on system data retrieved via the `psutil` library.
+   - The refresh rate can be configured by the user to update the gauges at the desired interval.
+
+3. **Interacting with Buttons**:
+   - The buttons in the footer (Kill Process, Process Details, and Export Process List) allow users to control system processes and view relevant information.
+
+4. **Setting Thresholds**:
+   - Users can input custom thresholds for CPU, memory, and disk usage, and these values can trigger alerts when the resource usage exceeds the set limits.
+
+---
+
+## Customization
+
+You can customize the appearance and functionality by modifying the following parts:
+
+1. **Colors and Themes**: 
+   - Modify the theme dictionary in the app to change colors for the gauges and UI elements.
+   
+2. **Thresholds**: 
+   - Change the default values for CPU, memory, and disk usage thresholds.
+
+3. **Refresh Rate**: 
+   - Adjust the refresh rate input field to change how frequently system resource data is updated.
+
+---
+
+## Example
+
+Here is a basic example of how the `Footer` class can be used in a Tkinter application:
+
+```python
 import tkinter as tk
-from tkinter import ttk
 
-class Footer:
-    def __init__(self, root, app):
-        """Initialize the footer with process controls and system alerts"""
-        self.app = app
-        self.theme = app.theme
+class MyApp:
+    def __init__(self, root):
         self.root = root
+        self.theme = {
+            "cpu_color": "#28a745",
+            "mem_color": "#17a2b8",
+            "disk_color": "#ffc107",
+            "accent": "#007bff",
+            "warning": "#f39c12",
+            "danger": "#e74c3c",
+            "grid_color": "#ecf0f1",
+            "text": "#ffffff"
+        }
+        self.footer = Footer(self.root, self)
         
-        self.frame = ttk.Frame(root, style="Card.TFrame")
-        
-      
-        self.frame.pack(side="bottom", fill="x", padx=15, pady=(0, 15))
-        
-       
-        self.container = ttk.Frame(self.frame, style="Card.TFrame")
-        self.container.pack(fill="x", padx=10, pady=10)
-        
-        
-        process_frame = ttk.Frame(self.container, style="Card.TFrame")
-        process_frame.pack(side="left", fill="y", padx=(0, 20))
-        
-        
-        process_title = ttk.Label(process_frame, 
-                                 text="PROCESS CONTROLS", 
-                                 style="Title.TLabel",
-                                 font=("Segoe UI", 12, "bold"))
-        process_title.pack(anchor="w", pady=(0, 10))
-        
-        
-        button_frame = ttk.Frame(process_frame, style="Card.TFrame")
-        button_frame.pack(fill="x")
-        
-        
-        kill_btn = ttk.Button(button_frame, 
-                             text="Kill Process", 
-                             command=self.app.kill_process,
-                             style="Danger.TButton")
-        kill_btn.pack(side="left", padx=(0, 10))
-        
-        
-        details_btn = ttk.Button(button_frame, 
-                                text="Process Details", 
-                                command=self.app.show_process_details,
-                                style="Accent.TButton")
-        details_btn.pack(side="left", padx=(0, 10))
-        
-       
-        export_btn = ttk.Button(button_frame, 
-                               text="Export Process List", 
-                               command=self.app.export_process_list,
-                               style="Success.TButton")
-        export_btn.pack(side="left")
-        
-        
-        alert_frame = ttk.Frame(self.container, style="Card.TFrame")
-        alert_frame.pack(side="left", fill="y", expand=True, padx=20)
-        
-        
-        alert_title = ttk.Label(alert_frame, 
-                               text="SYSTEM ALERTS", 
-                               style="Title.TLabel",
-                               font=("Segoe UI", 12, "bold"))
-        alert_title.pack(anchor="w", pady=(0, 10))
-        
-        
-        threshold_frame = ttk.Frame(alert_frame, style="Card.TFrame")
-        threshold_frame.pack(fill="x", pady=(0, 10))
-        
-        
-        ttk.Label(threshold_frame, text="CPU:", style="TLabel").pack(side="left", padx=(0, 5))
-        self.cpu_threshold = ttk.Entry(threshold_frame, width=5)
-        self.cpu_threshold.insert(0, "80")
-        self.cpu_threshold.pack(side="left", padx=(0, 10))
-        
-        
-        ttk.Label(threshold_frame, text="Memory:", style="TLabel").pack(side="left", padx=(0, 5))
-        self.mem_threshold = ttk.Entry(threshold_frame, width=5)
-        self.mem_threshold.insert(0, "80")
-        self.mem_threshold.pack(side="left", padx=(0, 10))
-        
-        
-        ttk.Label(threshold_frame, text="Disk:", style="TLabel").pack(side="left", padx=(0, 5))
-        self.disk_threshold = ttk.Entry(threshold_frame, width=5)
-        self.disk_threshold.insert(0, "90")
-        self.disk_threshold.pack(side="left", padx=(0, 10))
-        
-        
-        ttk.Button(threshold_frame, text="Apply",
-                   command=self.apply_thresholds,
-                   style="Accent.TButton").pack(side="left")
-        
-        
-        refresh_frame = ttk.Frame(self.container, style="Card.TFrame")
-        refresh_frame.pack(side="right", fill="y", padx=(20, 0))
-        
-        
-        refresh_title = ttk.Label(refresh_frame, 
-                                 text="REFRESH RATE", 
-                                 style="Title.TLabel",
-                                 font=("Segoe UI", 12, "bold"))
-        refresh_title.pack(anchor="w", pady=(0, 10))
-        
-        
-        rate_frame = ttk.Frame(refresh_frame, style="Card.TFrame")
-        rate_frame.pack(fill="x")
-        
-        ttk.Label(rate_frame, text="Update interval (seconds):", style="TLabel").pack(side="left", padx=(0, 10))
-        
-        self.refresh_rate = ttk.Entry(rate_frame, width=5)
-        self.refresh_rate.insert(0, "1")  
-        self.refresh_rate.pack(side="left")
+    def kill_process(self):
+        print("Process killed!")
     
-    def apply_thresholds(self):
-       
-        try:
-            cpu_threshold = int(self.cpu_threshold.get())
-            mem_threshold = int(self.mem_threshold.get())
-            disk_threshold = int(self.disk_threshold.get())
-            self.app.update_alert_thresholds(cpu_threshold, mem_threshold, disk_threshold)
-        except ValueError:
-            
-            pass
+    def show_process_details(self):
+        print("Showing process details!")
     
-    def get_refresh_rate(self):
-       
-        try:
-            return int(self.refresh_rate.get())
-        except ValueError:
-            return 1  
+    def export_process_list(self):
+        print("Exporting process list!")
 
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import numpy as np
-import psutil
-import platform
-import os
+root = tk.Tk()
+app = MyApp(root)
+root.mainloop()
+```
 
-def create_gauge(parent, theme, label):
-    
-    fig, ax = plt.subplots(figsize=(1.8, 1.8), dpi=100)  
-    fig.patch.set_facecolor('none')  
-    fig.patch.set_alpha(0.0)  
-    ax.set_facecolor('none')  
-    
-    
-    ax.set_xlim(-1, 1)
-    ax.set_ylim(-0.5, 1)
-    ax.axis('off')
-    
-    
-    canvas = FigureCanvasTkAgg(fig, parent)
-    canvas_widget = canvas.get_tk_widget()
-    canvas_widget.configure(highlightthickness=0)  
-    canvas_widget.pack(side="left", padx=2, pady=2)  
-    
-   
-    canvas.draw()
-    
-    return fig, ax
+This example initializes a simple Tkinter application with a footer and some basic functionality for controlling processes.
 
-def update_gauge(ax, percent, label, theme):
-    
-    try:
-        
-        if not (isinstance(percent, (int, float)) and np.isfinite(percent)):
-            print(f"Warning: Invalid percent value for {label} gauge: {percent}")
-            percent = 0  
+---
 
-        
-        ax.clear()
-        
-        
-        if label == "CPU":
-            base_color = theme["cpu_color"]
-        elif label == "MEM":
-            base_color = theme["mem_color"]
-        elif label == "DISK":
-            base_color = theme["disk_color"]
-        else:
-            base_color = theme["accent"]
-            
-        
-        if percent < 60:
-            color = base_color
-        elif percent < 80:
-            color = theme["warning"]
-        else:
-            color = theme["danger"]
-        
-       
-        sizes = [percent, 100-percent]
-        colors = [color, theme["grid_color"]]
-        
-        
-        wedges, _ = ax.pie(sizes, colors=colors, startangle=90, 
-                     counterclock=False, wedgeprops={'edgecolor': 'none', 
-                                                    'linewidth': 1, 
-                                                    'antialiased': True,
-                                                    'alpha': 0.9})  
-        
-       
-        centre_circle = plt.Circle((0,0), 0.70, fc='none')  
-        ax.add_patch(centre_circle)
-        
-        
-        ax.text(0, 0.05, f"{percent:.1f}%", 
-                ha='center', va='center', 
-                fontsize=14, fontweight='bold',
-                color=theme["text"])
-        
-        
-        ax.text(0, -0.2, label, 
-                ha='center', va='center', 
-                fontsize=10, fontweight='bold',
-                color=theme["text"])
-        
-       
-        if label == "CPU":
-            try:
-                cpu_count = psutil.cpu_count()
-                ax.text(0, -0.4, f"{cpu_count} threads", 
-                        ha='center', va='center', 
-                        fontsize=8, color=theme["text"])
-            except Exception as e:
-                print(f"Error getting CPU details: {e}")
-        
-        elif label == "MEM":
-            try:
-                mem = psutil.virtual_memory()
-                used_gb = mem.used / (1024**3)
-                total_gb = mem.total / (1024**3)
-                ax.text(0, -0.4, f"{used_gb:.1f}/{total_gb:.1f}GB", 
-                        ha='center', va='center', 
-                        fontsize=8, color=theme["text"])
-            except Exception as e:
-                print(f"Error getting memory details: {e}")
-        
-        elif label == "DISK":
-            try:
-                if platform.system() == 'Windows':
-                    try:
-                        disk = psutil.disk_usage('C:\\')
-                    except:
-                        system_drive = os.environ.get('SystemDrive', 'C:')
-                        disk = psutil.disk_usage(f"{system_drive}\\")
-                else:
-                    disk = psutil.disk_usage('/')
-                
-                free_gb = disk.free / (1024**3)
-                ax.text(0, -0.4, f"{free_gb:.1f}GB free", 
-                        ha='center', va='center', 
-                        fontsize=8, color=theme["text"])
-            except Exception as e:
-                print(f"Error getting disk details: {e}")
-        
-       
-        ax.set_xlim(-1, 1)
-        ax.set_ylim(-1, 1)
-        ax.axis('off')
-        
-    except Exception as e:
-        print(f"Error updating gauge: {e}")
-        
-        ax.clear()
-        ax.text(0, 0, f"{label}: {percent:.1f}%", 
-                ha='center', va='center', 
-                fontsize=12, 
-                color=theme["text"])
-        ax.set_xlim(-1, 1)
-        ax.set_ylim(-1, 1)
-        ax.axis('off')
+## Conclusion
 
-def darken_color(hex_color):
-    """Utility function to darken a color for 3D effects"""
-    try:
-        
-        h = hex_color.lstrip('#')
-        rgb = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
-        
-        
-        darkened = tuple(max(0, int(c * 0.8)) for c in rgb)
-        
-        
-        return '#{:02x}{:02x}{:02x}'.format(*darkened)
-    except (ValueError, IndexError):
-        return hex_color
+This project provides an interactive interface to monitor system resources and manage processes, allowing users to set alerts and customize thresholds. The code integrates Tkinter for the GUI, Matplotlib for graphical gauges, and psutil for system monitoring.
 
-def lighten_color(hex_color):
-    
-    try:
-        
-        h = hex_color.lstrip('#')
-        rgb = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
-        
-        
-        lightened = tuple(min(255, int(c * 1.2)) for c in rgb)
-        
-        
-        return '#{:02x}{:02x}{:02x}'.format(*lightened)
-    except (ValueError, IndexError):
-        return hex_color
-
-def blend_colors(color1, color2, ratio):
-   
-    try:
-       
-        h1 = color1.lstrip('#')
-        rgb1 = tuple(int(h1[i:i+2], 16) for i in (0, 2, 4))
-        
-        h2 = color2.lstrip('#')
-        rgb2 = tuple(int(h2[i:i+2], 16) for i in (0, 2, 4))
-        
-        
-        blended = tuple(int(r1 + (r2 - r1) * ratio) for r1, r2 in zip(rgb1, rgb2))
-        
-        
-        return '#{:02x}{:02x}{:02x}'.format(*blended)
-    except (ValueError, IndexError):
-        return color1 
