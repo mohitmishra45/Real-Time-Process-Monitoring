@@ -47,12 +47,20 @@ class Footer:
                                 style="Accent.TButton")
         details_btn.pack(side="left", padx=(0, 10))
         
-        # Export button
+        # Export button - make it more prominent
         export_btn = ttk.Button(button_frame, 
-                               text="Export Process List", 
+                               text="Export CSV", 
                                command=self.app.export_process_list,
-                               style="Success.TButton")
+                               style="Success.TButton",
+                               width=12)  # Make it wider for visibility
         export_btn.pack(side="left")
+        
+        # Add a tooltip/label to explain the export function
+        export_label = ttk.Label(button_frame,
+                                text="(Save processes as CSV)",
+                                style="Small.TLabel",
+                                font=("Segoe UI", 8))
+        export_label.pack(side="left", padx=(2, 10))
         
         # Center: System alerts
         alert_frame = ttk.Frame(self.container, style="Card.TFrame")

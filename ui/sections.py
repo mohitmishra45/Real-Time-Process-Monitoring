@@ -199,15 +199,15 @@ class TopSection:
         collection_frame.configure(style="AICard.TFrame")
         
         collection_label = ttk.Label(collection_frame, 
-                                   text="Data Collection:",
-                                   font=("Segoe UI", 9, "bold"),
-                                   foreground=self.theme["text"],
-                                   background=self.theme["chart_bg"])
+                               text="Data Collection:",
+                               font=("Consolas", 9, "bold"),  # Monospace font for terminal-style logs
+                               foreground=self.theme["text"],
+                               background=self.theme["chart_bg"])
         collection_label.pack(anchor="center")
         
         self.collection_time = ttk.Label(collection_frame, 
                                        text="0.0 mins",
-                                       font=("Segoe UI", 9),
+                                       font=("Consolas", 9),  # Monospace font for terminal-style logs
                                        foreground=self.theme["text"],
                                        background=self.theme["chart_bg"])
         self.collection_time.pack(anchor="center")
@@ -218,17 +218,17 @@ class TopSection:
         training_frame.configure(style="AICard.TFrame")
         
         training_label = ttk.Label(training_frame, 
-                                  text="Model Training:",
-                                  font=("Segoe UI", 9, "bold"),
-                                  foreground=self.theme["text"],
-                                  background=self.theme["chart_bg"])
+                              text="Model Training:",
+                              font=("Segoe UI", 9, "bold"),
+                              foreground=self.theme["text"],
+                              background=self.theme["chart_bg"])
         training_label.pack(anchor="center")
         
         self.training_status = ttk.Label(training_frame, 
-                                        text="Waiting for data...",
-                                        font=("Segoe UI", 9),
-                                        foreground=self.theme["text"],
-                                        background=self.theme["chart_bg"])
+                                    text="[INIT] Waiting for data...",
+                                    font=("Consolas", 9),  # Monospace font for terminal-style logs
+                                    foreground=self.theme["text"],
+                                    background=self.theme["chart_bg"])
         self.training_status.pack(anchor="center")
 
         # Prediction Status
@@ -270,6 +270,7 @@ class TopSection:
                                    relief="flat",
                                    padx=10,
                                    pady=5,
+                                   state="disabled",  # Initially disabled until training is complete
                                    command=lambda: self.handle_ai_button("predictions"))
         self.predictions_btn.grid(row=0, column=0, padx=5, sticky="ew")
 
@@ -283,23 +284,21 @@ class TopSection:
                                 relief="flat",
                                 padx=10,
                                 pady=5,
+                                state="disabled",  # Initially disabled until training is complete
                                 command=lambda: self.handle_ai_button("anomaly"))
         self.anomaly_btn.grid(row=0, column=1, padx=5, sticky="ew")
 
-        # Create a frame to contain the scrollable area
-        scroll_container = ttk.Frame(ai_frame)
-        scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
-        scroll_container.configure(style="AICard.TFrame")
+        # Create a frame for fixed-size output area with better styling
+        output_container = ttk.Frame(ai_frame)
+        output_container.pack(fill="both", expand=True, padx=5, pady=5)
+        output_container.configure(style="AICard.TFrame")
         
-        # Add scrollbar
-        scrollbar = ttk.Scrollbar(scroll_container)
-        scrollbar.pack(side="right", fill="y")
-        
-        # Create Text widget for status messages with scrollbar and center alignment
-        self.status_msg = tk.Text(scroll_container,
-                                height=6,
+        # Create Text widget for status messages with fixed size and better styling
+        self.status_msg = tk.Text(output_container,
+                                height=8,  # Fixed height
+                                width=40,  # Fixed width
                                 wrap="word",
-                                font=("Segoe UI", 9),
+                                font=("Consolas", 9),  # Monospace font for terminal-style logs
                                 bg=self.theme["card_bg"],  
                                 fg=self.theme["text"],  
                                 insertbackground=self.theme["text"],  
@@ -310,9 +309,7 @@ class TopSection:
                                 pady=5)
         self.status_msg.pack(fill="both", expand=True)
         
-        # Configure scrollbar
-        scrollbar.config(command=self.status_msg.yview)
-        self.status_msg.config(yscrollcommand=scrollbar.set)
+        # No scrollbar needed for fixed-size output area
         
         # Configure center alignment tag
         self.status_msg.tag_configure("center", justify="center")
@@ -321,16 +318,33 @@ class TopSection:
         self.status_msg.tag_configure("normal", foreground=self.theme["text"])  
         self.status_msg.tag_configure("success", foreground=self.theme["success"])  
         self.status_msg.tag_configure("warning", foreground=self.theme["warning"])  
-        self.status_msg.tag_configure("error", foreground=self.theme["danger"])    
+        self.status_msg.tag_configure("error", foreground=self.theme["danger"])  # Using 'danger' key instead of 'error'
+        
+        # Set initial message to indicate that predictions are only available after training
+        self.status_msg.config(state="normal")
+        self.status_msg.delete(1.0, tk.END)
+        initial_message = "AI model training in progress...\n\nPredictions and anomaly detection will be available once training is complete.\n\nPlease wait for the training process to finish."
+        self.status_msg.insert(tk.END, initial_message, "center")
+        self.status_msg.config(state="disabled")    
         self.status_msg.tag_configure("highlight", foreground=self.theme["accent"]) 
         
-        # Initial message with center alignment
-        self.status_msg.insert("1.0", "AI system ready for analysis", ("center", "normal"))
-        self.status_msg.configure(state="disabled")
+        # Initial message with center alignment is now set above, no need for these lines
+        # self.status_msg.insert("1.0", "AI system ready for analysis", ("center", "normal"))
+        # self.status_msg.configure(state="disabled")
 
     def handle_ai_button(self, action):
         """Handle AI button clicks with visual feedback and analysis"""
         try:
+            # Check if model training is complete
+            if not hasattr(self.app, 'is_model_trained') or not self.app.is_model_trained:
+                self.update_status_message("Model training is not yet complete.\n\nPlease wait for the training process to finish before requesting predictions or anomaly detection.")
+                return
+            
+            # Set a flag to prevent the status message from being reset by periodic updates
+            if not hasattr(self.app, 'showing_ai_results'):
+                self.app.showing_ai_results = False
+            self.app.showing_ai_results = True
+            
             # Get current metrics
             try:
                 cpu_percent = psutil.cpu_percent()
@@ -341,7 +355,7 @@ class TopSection:
                 cpu_percent = 50
                 mem_percent = 60
                 disk_percent = 70
-            
+        
             # Update button states and status message
             if action == "anomaly":
                 # Generate anomaly message
@@ -848,52 +862,78 @@ class TopSection:
                 cpu_percent = psutil.cpu_percent(interval=0.1)
                 cpu_count = psutil.cpu_count()
                 physical_cores = psutil.cpu_count(logical=False)
-                message = f"CPU usage: {cpu_percent:.1f}% across {physical_cores} physical cores ({cpu_count} logical cores)."
-                self.update_chat_display(f"CPU Information: {message}", "assistant")
+                message = "CPU usage: " + str(round(cpu_percent, 1)) + "% across " + \
+                          str(physical_cores) + " physical cores (" + str(cpu_count) + " logical cores)."
+                self.update_chat_display("CPU Information: " + message, "assistant")
             elif command == "memory":
                 mem = psutil.virtual_memory()
                 used_gb = mem.used / (1024**3)
                 total_gb = mem.total / (1024**3)
                 avail_gb = mem.available / (1024**3)
-                message = f"Memory: {used_gb:.2f}GB used of {total_gb:.2f}GB total ({mem.percent}%). You have {avail_gb:.2f}GB available."
-                self.update_chat_display(f"Memory Information: {message}", "assistant")
+                message = "Memory: " + str(round(used_gb, 2)) + "GB used of " + \
+                          str(round(total_gb, 2)) + "GB total (" + str(mem.percent) + "%). You have " + \
+                          str(round(avail_gb, 2)) + "GB available."
+                self.update_chat_display("Memory Information: " + message, "assistant")
             elif command == "disk":
-                if platform.system() == 'Windows':
-                    disk_usage = psutil.disk_usage('C:\\')
-                    disk_label = "C:"
-                else:
-                    disk_usage = psutil.disk_usage('/')
-                    disk_label = "/"
-                free_gb = disk_usage.free / (1024**3)
-                total_gb = disk_usage.total / (1024**3)
-                used_gb = disk_usage.used / (1024**3)
-                message = f"Disk ({disk_label}): {used_gb:.2f}GB used of {total_gb:.2f}GB ({disk_usage.percent}% used). {free_gb:.2f}GB free."
-                self.update_chat_display(f"Disk Information: {message}", "assistant")
+                try:
+                    # Handle disk path safely
+                    if platform.system() == 'Windows':
+                        disk_path = 'C:\\'
+                        disk_label = "C:\\"
+                    else:
+                        disk_path = '/'
+                        disk_label = "/"
+                        
+                    disk_usage = psutil.disk_usage(disk_path)
+                    free_gb = disk_usage.free / (1024**3)
+                    total_gb = disk_usage.total / (1024**3)
+                    used_gb = disk_usage.used / (1024**3)
+                    
+                    # Use explicit string concatenation instead of f-strings to avoid formatting issues
+                    message = "Disk (" + disk_label + "): " + \
+                              str(round(used_gb, 2)) + "GB used of " + \
+                              str(round(total_gb, 2)) + "GB (" + \
+                              str(disk_usage.percent) + "% used). " + \
+                              str(round(free_gb, 2)) + "GB free."
+                              
+                    self.update_chat_display("Disk Information: " + message, "assistant")
+                except Exception as e:
+                    self.update_chat_display("Error retrieving disk information: " + str(e), "error")
             elif command == "network":
                 net_io = psutil.net_io_counters()
                 sent_mb = net_io.bytes_sent / (1024**2)
                 recv_mb = net_io.bytes_recv / (1024**2)
-                message = f"Network: {recv_mb:.2f}MB received, {sent_mb:.2f}MB sent since startup."
-                self.update_chat_display(f"Network Information: {message}", "assistant")
+                message = "Network: " + str(round(recv_mb, 2)) + "MB received, " + \
+                          str(round(sent_mb, 2)) + "MB sent since startup."
+                self.update_chat_display("Network Information: " + message, "assistant")
             elif command == "processes":
                 process_count = len(list(psutil.process_iter()))
-                message = f"Currently running {process_count} processes."
-                self.update_chat_display(f"Process Information: {message}", "assistant")
+                message = "Currently running " + str(process_count) + " processes."
+                self.update_chat_display("Process Information: " + message, "assistant")
             elif command == "help":
                 self.show_assistant_help()
         except Exception as e:
-            self.update_chat_display(f"Error retrieving {command} information: {str(e)}", "error")
+            self.update_chat_display("Error retrieving " + command + " information: " + str(e), "error")
 
     def show_assistant_help(self):
         """Show help information for the virtual assistant"""
         help_text = (
             "Virtual Assistant Help:\n\n"
             "I can provide information about your system resources. Try asking about:\n"
-            "• CPU usage and information\n"
-            "• Memory/RAM status\n"
-            "• Disk space and usage\n"
-            "• Network activity\n"
-            "• Running processes\n\n"
+            "• CPU usage, processor information, cores, and threads\n"
+            "• Memory/RAM status, usage, and availability\n"
+            "• Disk space, storage, drives, and free space\n"
+            "• Network activity, connections, and bandwidth\n"
+            "• Running processes, applications, and tasks\n"
+            "• Overall system performance and status\n"
+            "• Temperature and sensor data (if available)\n"
+            "• Battery information (for laptops)\n\n"
+            "Example questions:\n"
+            "• 'How much memory is being used?'\n"
+            "• 'What's my current CPU usage?'\n"
+            "• 'Show me disk space information'\n"
+            "• 'How is my system performing overall?'\n"
+            "• 'What applications are running?'\n\n"
             "You can also use the quick command buttons above for instant information."
         )
         self.update_chat_display(help_text, "assistant")
@@ -916,7 +956,7 @@ class TopSection:
         query = self.user_input.get().strip()
         if query:
             # Display user query with user tag for proper coloring
-            self.update_chat_display(f"You: {query}", "user")
+            self.update_chat_display("You: " + query, "user")
             # Clear input field
             self.user_input.delete(0, tk.END)
             
@@ -928,47 +968,106 @@ class TopSection:
                     used_gb = mem.used / (1024**3)
                     total_gb = mem.total / (1024**3)
                     avail_gb = mem.available / (1024**3)
-                    response = f"Memory: {used_gb:.2f}GB used of {total_gb:.2f}GB total ({mem.percent}%). You have {avail_gb:.2f}GB available."
+                    response = "Memory: " + str(round(used_gb, 2)) + "GB used of " + \
+                              str(round(total_gb, 2)) + "GB total (" + str(mem.percent) + "%). You have " + \
+                              str(round(avail_gb, 2)) + "GB available."
                 elif "cpu" in query.lower():
                     cpu_percent = psutil.cpu_percent(interval=0.1)
                     cpu_count = psutil.cpu_count()
                     physical_cores = psutil.cpu_count(logical=False)
-                    response = f"CPU usage: {cpu_percent:.1f}% across {physical_cores} physical cores ({cpu_count} logical cores)."
-                elif "disk" in query.lower():
-                    if platform.system() == 'Windows':
-                        disk_usage = psutil.disk_usage('C:\\')
-                        disk_label = "C:"
-                    else:
-                        disk_usage = psutil.disk_usage('/')
-                        disk_label = "/"
-                    free_gb = disk_usage.free / (1024**3)
-                    total_gb = disk_usage.total / (1024**3)
-                    used_gb = disk_usage.used / (1024**3)
-                    response = f"Disk ({disk_label}): {used_gb:.2f}GB used of {total_gb:.2f}GB ({disk_usage.percent}% used). {free_gb:.2f}GB free."
-                elif "network" in query.lower():
+                    response = "CPU usage: " + str(round(cpu_percent, 1)) + "% across " + \
+                              str(physical_cores) + " physical cores (" + str(cpu_count) + " logical cores)."
+                elif "disk" in query.lower() or "storage" in query.lower() or "drive" in query.lower() or "space" in query.lower():
+                    try:
+                        # Handle disk path safely
+                        if platform.system() == 'Windows':
+                            disk_path = 'C:\\'
+                            disk_label = "C:\\"
+                        else:
+                            disk_path = '/'
+                            disk_label = "/"
+                            
+                        disk_usage = psutil.disk_usage(disk_path)
+                        free_gb = disk_usage.free / (1024**3)
+                        total_gb = disk_usage.total / (1024**3)
+                        used_gb = disk_usage.used / (1024**3)
+                        
+                        # Use explicit string concatenation instead of f-strings to avoid formatting issues
+                        response = "Disk (" + disk_label + "): " + \
+                                  str(round(used_gb, 2)) + "GB used of " + \
+                                  str(round(total_gb, 2)) + "GB (" + \
+                                  str(disk_usage.percent) + "% used). " + \
+                                  str(round(free_gb, 2)) + "GB free."
+                    except Exception as e:
+                        response = "Error retrieving disk information: " + str(e)
+                elif "network" in query.lower() or "internet" in query.lower() or "wifi" in query.lower() or "connection" in query.lower():
                     net_io = psutil.net_io_counters()
                     sent_mb = net_io.bytes_sent / (1024**2)
                     recv_mb = net_io.bytes_recv / (1024**2)
-                    response = f"Network: {recv_mb:.2f}MB received, {sent_mb:.2f}MB sent since startup."
-                elif "processes" in query.lower():
+                    response = "Network: " + str(round(recv_mb, 2)) + "MB received, " + \
+                              str(round(sent_mb, 2)) + "MB sent since startup."
+                elif "processes" in query.lower() or "apps" in query.lower() or "programs" in query.lower() or "tasks" in query.lower():
                     process_count = len(list(psutil.process_iter()))
-                    response = f"Currently running {process_count} processes."
+                    response = "Currently running " + str(process_count) + " processes."
+                elif "performance" in query.lower() or "system status" in query.lower() or "overall" in query.lower():
+                    try:
+                        # Get current system performance metrics
+                        cpu_percent = psutil.cpu_percent(interval=0.1)
+                        mem = psutil.virtual_memory()
+                        mem_percent = mem.percent
+                        
+                        # Handle disk usage safely
+                        if platform.system() == 'Windows':
+                            disk_path = 'C:\\'
+                        else:
+                            disk_path = '/'
+                            
+                        disk_usage = psutil.disk_usage(disk_path)
+                        disk_percent = disk_usage.percent
+                        
+                        # Overall system status
+                        if cpu_percent > 80 or mem_percent > 80 or disk_percent > 90:
+                            status = "System is under heavy load"
+                        elif cpu_percent > 60 or mem_percent > 60 or disk_percent > 70:
+                            status = "System is under moderate load"
+                        else:
+                            status = "System is running normally"
+                        
+                        # Use explicit string concatenation instead of f-strings to avoid formatting issues
+                        response = "System Performance: " + status + "\n" + \
+                                  "CPU: " + str(round(cpu_percent, 1)) + "%\n" + \
+                                  "Memory: " + str(round(mem_percent, 1)) + "%\n" + \
+                                  "Disk: " + str(round(disk_percent, 1)) + "%"
+                    except Exception as e:
+                        response = "Error analyzing system performance: " + str(e)
                 elif "help" in query.lower():
-                    response = "I can help with CPU, memory, disk, network, and process information. Ask me specific questions about your system resources."
+                    response = "I can help with CPU, memory, disk, network, processes, and system performance. Ask me specific questions about your system resources."
                 else:
                     # Use the more comprehensive response generator
                     response = self.generate_assistant_response(query)
                     if not response:  # If an empty string is returned (for help/examples)
                         return  # Exit early as the display has already been updated
             except Exception as e:
-                response = f"Error processing your request: {str(e)}"
+                response = "Error processing your request: " + str(e)
                 
             # Display the assistant's response with theme-adaptive coloring
-            self.update_chat_display(f"Assistant: {response}", "assistant")
+            self.update_chat_display("Assistant: " + response, "assistant")
 
     def generate_assistant_response(self, query):
         """Generate a comprehensive response based on the user's query with enhanced capabilities"""
         query = query.lower()
+        
+        # Expanded keyword matching for better natural language understanding
+        cpu_keywords = ["cpu", "processor", "core", "thread", "processing", "compute", "computing"]
+        memory_keywords = ["memory", "ram", "dram", "mem", "random access memory"]
+        disk_keywords = ["disk", "storage", "drive", "space", "hdd", "ssd", "hard drive", "solid state"]
+        network_keywords = ["network", "internet", "wifi", "connection", "ethernet", "lan", "wan", "bandwidth"]
+        process_keywords = ["process", "application", "app", "program", "task", "running"]
+        performance_keywords = ["performance", "speed", "fast", "slow", "usage", "utilization", "load"]
+        
+        # Check if query contains any of the keywords
+        def contains_keywords(text, keywords):
+            return any(keyword in text for keyword in keywords)
         
         try:
             # Help command
@@ -981,8 +1080,8 @@ class TopSection:
                 self.show_assistant_examples()
                 return ""
             
-            # Network-related queries - NEW SECTION
-            if "network" in query or "internet" in query or "wifi" in query or "connection" in query:
+            # Network-related queries - ENHANCED SECTION
+            if contains_keywords(query, network_keywords):
                 try:
                     # Get network IO counters
                     net_io = psutil.net_io_counters()
@@ -1042,8 +1141,8 @@ class TopSection:
                 except Exception as e:
                     return f"I encountered an error retrieving network information: {str(e)}."
             
-            # Temperature and sensor data - NEW SECTION
-            elif "temperature" in query or "temp" in query or "sensor" in query or "fan" in query or "cooling" in query:
+            # Temperature and sensor data - ENHANCED SECTION
+            elif "temperature" in query or "temp" in query or "sensor" in query or "fan" in query or "cooling" in query or "thermal" in query or "heat" in query:
                 try:
                     if hasattr(psutil, "sensors_temperatures"):
                         temps = psutil.sensors_temperatures()
@@ -1413,22 +1512,25 @@ class TopSection:
                 # Keep user text color as accent for better visibility
                 self.chat_display.tag_configure("user", foreground=theme.get("accent", "#0078D7"))
             
+            # Update AI Insights section
+            self.update_ai_insights_colors(theme)
+            
             # Update AI Insights and Analytics text widgets
             if hasattr(self, 'results_text'):
                 self.results_text.config(
-                    bg=theme.get("card_bg", "#ffffff"),
+                    bg=theme.get("chart_bg", "#252640"),
                     fg=theme.get("text", "#000000")
                 )
             
             if hasattr(self, 'analysis_text'):
                 self.analysis_text.config(
-                    bg=theme.get("card_bg", "#ffffff"),
+                    bg=theme.get("chart_bg", "#252640"),
                     fg=theme.get("text", "#000000")
                 )
             
             if hasattr(self, 'anomaly_text'):
                 self.anomaly_text.config(
-                    bg=theme.get("card_bg", "#ffffff"),
+                    bg=theme.get("chart_bg", "#252640"),
                     fg=theme.get("text", "#000000")
                 )
             
@@ -1443,6 +1545,163 @@ class TopSection:
             self.update_results_and_analysis()
         except Exception as e:
             print(f"Error updating theme components: {e}")
+        
+    def update_ai_insights_colors(self, theme):
+        """Update all AI Insights elements with theme colors"""
+        try:
+            # Find all AI Insights related widgets in the UI
+            for column in range(3):  # Check all three columns in the top container
+                for widget in self.frame.winfo_children():
+                    if isinstance(widget, ttk.Frame):
+                        # Check each column in the top container
+                        for child in widget.winfo_children():
+                            if isinstance(child, ttk.Frame):
+                                # Look for the AI Insights section
+                                for section in child.winfo_children():
+                                    # Update all frames with AICard.TFrame style
+                                    if isinstance(section, ttk.Frame):
+                                        try:
+                                            section.configure(style="AICard.TFrame")
+                                        except:
+                                            pass
+                                            
+                                        # Look for the title label
+                                        for label in section.winfo_children():
+                                            if isinstance(label, ttk.Label):
+                                                try:
+                                                    text = label.cget("text")
+                                                    if "AI INSIGHTS" in text:
+                                                        # Update the title label
+                                                        label.configure(
+                                                            foreground=theme.get("accent", "#0078D7"),
+                                                            background=theme.get("chart_bg", "#252640")
+                                                        )
+                                                    elif any(keyword in text for keyword in ["Data Collection", "Model Training", "AI Status"]):
+                                                        # Update section headers
+                                                        label.configure(
+                                                            foreground=theme.get("text", "#000000"),
+                                                            background=theme.get("chart_bg", "#252640")
+                                                        )
+                                                except:
+                                                    pass
+                                            
+                                            # Update all nested frames
+                                            if isinstance(label, ttk.Frame):
+                                                try:
+                                                    label.configure(style="AICard.TFrame")
+                                                    
+                                                    # Update all widgets in nested frames
+                                                    for nested_widget in label.winfo_children():
+                                                        if isinstance(nested_widget, ttk.Label):
+                                                            nested_widget.configure(
+                                                                foreground=theme.get("text", "#000000"),
+                                                                background=theme.get("chart_bg", "#252640")
+                                                            )
+                                                except:
+                                                    pass
+            
+            # Update specific widgets if they exist
+            ai_labels = [
+                'collection_label', 'collection_time',
+                'training_label', 'training_status',
+                'prediction_label', 'prediction_status'
+            ]
+            
+            for label_name in ai_labels:
+                if hasattr(self, label_name):
+                    label = getattr(self, label_name)
+                    try:
+                        label.configure(
+                            foreground=theme.get("text", "#000000"),
+                            background=theme.get("chart_bg", "#252640")
+                        )
+                    except Exception as label_error:
+                        print(f"Error updating {label_name}: {label_error}")
+            
+            # Update AI Insights buttons
+            ai_buttons = ['predictions_btn', 'anomaly_btn']
+            for btn_name in ai_buttons:
+                if hasattr(self, btn_name):
+                    try:
+                        btn = getattr(self, btn_name)
+                        btn.configure(
+                            bg=theme.get("button_bg", "#0078D7"),
+                            fg=theme.get("text", "#000000"),
+                            activebackground=theme.get("accent", "#0078D7"),
+                            activeforeground="#FFFFFF"
+                        )
+                    except Exception as btn_error:
+                        print(f"Error updating {btn_name}: {btn_error}")
+                        
+            # Update results text area
+            for widget in self.frame.winfo_children():
+                if isinstance(widget, ttk.Frame):
+                    for child in widget.winfo_children():
+                        if isinstance(child, ttk.Frame):
+                            for section in child.winfo_children():
+                                # Look for text widgets in the AI Insights section
+                                if isinstance(section, ttk.Frame):
+                                    for text_widget in section.winfo_children():
+                                        if isinstance(text_widget, tk.Text):
+                                            try:
+                                                text_widget.configure(
+                                                    bg=theme.get("chart_bg", "#252640"),
+                                                    fg=theme.get("text", "#000000")
+                                                )
+                                            except Exception as text_error:
+                                                print(f"Error updating text widget: {text_error}")
+                                        # Look for scrollable frames that might contain text widgets
+                                        elif isinstance(text_widget, ttk.Frame):
+                                            for scrollable in text_widget.winfo_children():
+                                                if isinstance(scrollable, tk.Text):
+                                                    try:
+                                                        scrollable.configure(
+                                                            bg=theme.get("chart_bg", "#252640"),
+                                                            fg=theme.get("text", "#000000")
+                                                        )
+                                                    except Exception as scroll_error:
+                                                        print(f"Error updating scrollable text: {scroll_error}")
+        except Exception as e:
+            print(f"Error updating AI Insights colors: {e}")
+            
+    def enable_ai_buttons(self, is_enabled=True):
+        """Enable or disable AI prediction buttons based on model training status"""
+        try:
+            # Update button states
+            if hasattr(self, 'predictions_btn') and hasattr(self, 'anomaly_btn'):
+                state = "normal" if is_enabled else "disabled"
+                self.predictions_btn.config(state=state)
+                self.anomaly_btn.config(state=state)
+                
+                # Check if we're currently showing AI results - if so, don't update the status message
+                if hasattr(self.app, 'showing_ai_results') and self.app.showing_ai_results:
+                    # Don't update the status message if we're showing AI results
+                    return
+                
+                # Update status message
+                if hasattr(self, 'status_msg'):
+                    self.status_msg.config(state="normal")
+                    self.status_msg.delete(1.0, tk.END)
+                    
+                    if is_enabled:
+                        # Model training is complete
+                        message = "AI model training complete.\n\nYou can now use the 'Predictions' and 'Anomaly Detection' buttons to analyze system performance."
+                    else:
+                        # Model training is in progress
+                        message = "AI model training in progress...\n\nPredictions and anomaly detection will be available once training is complete."
+                    
+                    self.status_msg.insert(tk.END, message, "center")
+                    self.status_msg.config(state="disabled")
+        except Exception as e:
+            print(f"Error updating AI button states: {e}")
+                    
+    def reset_ai_results_flag(self):
+        """Reset the showing_ai_results flag when user interacts with other parts of the UI"""
+        try:
+            if hasattr(self.app, 'showing_ai_results'):
+                self.app.showing_ai_results = False
+        except Exception as e:
+            print(f"Error resetting AI results flag: {e}")
 
     def update_smart_recommendations(self):
         """Update the smart recommendations with more detailed tips based on system data and center-aligned text"""
@@ -1853,36 +2112,48 @@ class MiddleSection:
     def kill_selected_process(self):
         """Kill the selected process after confirmation"""
         try:
+            # Check if any item is selected
+            selected_items = self.tree.selection()
+            if not selected_items:
+                messagebox.showwarning("Warning", "Please select a process to terminate.")
+                return
+                
             # Get the selected item from the tree view
-            selected_item = self.tree.selection()[0]
+            selected_item = selected_items[0]
             
+            # Get the values from the selected item
+            values = self.tree.item(selected_item, "values")
+            if not values or len(values) < 2:
+                messagebox.showwarning("Warning", "Invalid process selection.")
+                return
+                
             # Get the process ID and name from the selected item
-            pid = int(self.tree.item(selected_item, "values")[0])
-            process_name = self.tree.item(selected_item, "values")[1]
+            pid = int(values[0])
+            process_name = values[1]
+            
+            # Store the selected process in the app for reference
+            if hasattr(self, 'app') and self.app is not None:
+                self.app.selected_process = [pid, process_name]
+                print(f"Selected process: {[pid, process_name]}")
             
             # Confirm termination
             if messagebox.askyesno("Confirm", f"Are you sure you want to terminate process {pid} ({process_name})?"):
                 try:
-                    # Attempt to terminate the process
-                    process = psutil.Process(pid)
-                    process.terminate()
+                    # Use the utility function from process_utils for better error handling
+                    from utils.process_utils import kill_process
+                    success, message = kill_process(pid)
                     
-                    # Wait for process to terminate or force kill
-                    try:
-                        process.wait(timeout=3)
-                    except psutil.TimeoutExpired:
-                        process.kill()
-                    
-                    # Update the process list
+                    # Always update the process list
                     self.update_process_list()
-
-                    # Provide feedback
-                    messagebox.showinfo("Success", f"Process {pid} ({process_name}) has been terminated.")
-                except psutil.NoSuchProcess:
-                    messagebox.showerror("Error", f"Process {pid} no longer exists.")
+                    
+                    # Provide feedback based on success
+                    if success:
+                        messagebox.showinfo("Success", f"Process {pid} ({process_name}) has been terminated.")
+                    else:
+                        messagebox.showerror("Error", message)
+                except Exception as e:
+                    messagebox.showerror("Error", f"Failed to terminate process: {str(e)}")
                     self.update_process_list()  # Refresh anyway
-                except psutil.AccessDenied:
-                    messagebox.showerror("Error", f"Access denied when trying to terminate process {pid}. Try running as administrator.")
         except ValueError as e:
             messagebox.showerror("Error", f"Invalid process ID: {str(e)}")
         except Exception as e:

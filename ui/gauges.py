@@ -188,12 +188,36 @@ def update_gauge(ax, percent, label, theme):
                     text.set_text(f"{used_gb:.1f}/{total_gb:.1f}GB")
                 elif label == "DISK":
                     try:
-                        path = 'C:\\' if platform.system() == 'Windows' else '/'
-                        total, used, free = shutil.disk_usage(path)
-                        free_gb = free / (1024**3)
-                        text.set_text(f"{free_gb:.1f}GB free")
-                    except Exception:
-                        text.set_text("N/A")
+                        # Try to get the system drive for Windows
+                        if platform.system() == 'Windows':
+                            # Try system drive first
+                            system_drive = os.environ.get('SystemDrive', 'C:')
+                            try:
+                                total, used, free = shutil.disk_usage(system_drive + '\\')
+                            except Exception:
+                                # Try other common drives if system drive fails
+                                disk_found = False
+                                for drive in ['C:', 'D:', 'E:']:
+                                    try:
+                                        total, used, free = shutil.disk_usage(drive + '\\')
+                                        disk_found = True
+                                        break
+                                    except Exception:
+                                        continue
+                            
+                                if not disk_found:
+                                    # If all drives fail, raise exception to be caught below
+                                    raise FileNotFoundError("No valid disk found")
+                        else:  # Unix/Linux/MacOS
+                            total, used, free = shutil.disk_usage('/')
+                            
+                        # Calculate and display used space instead of free space
+                        used_gb = used / (1024**3)
+                        total_gb = total / (1024**3)
+                        text.set_text(f"{used_gb:.1f}/{total_gb:.1f}GB used")
+                    except Exception as e:
+                        print(f"Error getting disk info for gauge: {e}")
+                        text.set_text("Disk N/A")
                 text.set_color(text_color)
                 found_info_text = True
                 
@@ -229,15 +253,39 @@ def update_gauge(ax, percent, label, theme):
                         color=text_color)
             elif label == "DISK":
                 try:
-                    path = 'C:\\' if platform.system() == 'Windows' else '/'
-                    total, used, free = shutil.disk_usage(path)
-                    free_gb = free / (1024**3)
-                    ax.text(0.5, 0.15, f"{free_gb:.1f}GB free",
+                    # Try to get the system drive for Windows
+                    if platform.system() == 'Windows':
+                        # Try system drive first
+                        system_drive = os.environ.get('SystemDrive', 'C:')
+                        try:
+                            total, used, free = shutil.disk_usage(system_drive + '\\')
+                        except Exception:
+                            # Try other common drives if system drive fails
+                            disk_found = False
+                            for drive in ['C:', 'D:', 'E:']:
+                                try:
+                                    total, used, free = shutil.disk_usage(drive + '\\')
+                                    disk_found = True
+                                    break
+                                except Exception:
+                                    continue
+                            
+                            if not disk_found:
+                                # If all drives fail, raise exception to be caught below
+                                raise FileNotFoundError("No valid disk found")
+                    else:  # Unix/Linux/MacOS
+                        total, used, free = shutil.disk_usage('/')
+                        
+                    # Calculate and display used space instead of free space
+                    used_gb = used / (1024**3)
+                    total_gb = total / (1024**3)
+                    ax.text(0.5, 0.15, f"{used_gb:.1f}/{total_gb:.1f}GB used",
                             ha='center', va='center',
                             fontsize=7,
                             color=text_color)
-                except Exception:
-                    ax.text(0.5, 0.15, "N/A",
+                except Exception as e:
+                    print(f"Error getting disk info for gauge creation: {e}")
+                    ax.text(0.5, 0.15, "Disk N/A",
                             ha='center', va='center',
                             fontsize=7,
                             color=text_color)

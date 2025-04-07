@@ -1,24 +1,26 @@
 # Real-Time Process Monitoring Dashboard
 
+### Authors: Sayandip Jana, Mohit Kumar Mishra, Anurag Pandey
+
 A sophisticated, feature-rich system monitoring application built with Python that provides real-time insights into system performance with AI-powered analytics.
 
-![image](https://github.com/user-attachments/assets/ce8eb473-6848-448a-8c8a-ed9824ee0663)
+![Dashboard Screenshot](https://github.com/user-attachments/assets/0b60728d-59d7-4ea0-b62a-00d32fe18770)
 
-## 🌟 Features
+## Features
 
-### 💻 System Monitoring
+### System Monitoring
 - **Real-time Resource Tracking**: Monitor CPU, memory, disk, and network usage with beautiful gauges and graphs
 - **Process Management**: View, filter, sort, and manage all running processes
 - **Detailed Process Information**: Get comprehensive details about any process including memory usage, CPU utilization, threads, and more
 - **Process Control**: Kill processes, change priorities, and manage system resources efficiently
 
-### 📊 Data Visualization
+### Data Visualization
 - **Interactive Performance Graphs**: Track system performance over time with customizable time ranges (5 minutes, 15 minutes, 1 hour)
 - **Resource Usage Gauges**: Visual indicators of current system resource utilization
 - **Process Intelligence**: Visualize process relationships and dependencies with intelligent categorization
 - **Customizable Themes**: Multiple theme options including Sunrise, Twilight, Midnight, and Forest
 
-### 🧠 Process Intelligence
+### Process Intelligence
 - **Resource Usage Analysis**: Detailed breakdown of system resource consumption
 - **Process Relations**: Visualization of relationships between processes
 - **System Summary**:
@@ -31,8 +33,8 @@ A sophisticated, feature-rich system monitoring application built with Python th
 - **Resource Trends**: Tracking and analysis of usage patterns over time
 - **Optimization Suggestions**: Recommendations for improving system performance
 
-### 🤖 AI Insights
-- **Data Collection Tracking**: Shows how long metrics have been collected (e.g., "0.0 mins")
+### AI Insights
+- **Data Collection Tracking**: Shows how long metrics have been collected
 - **Model Training Status**: Indicates AI model training progress
 - **AI Status Monitoring**: Shows current state of AI components
 - **Predictive Analytics**:
@@ -41,7 +43,7 @@ A sophisticated, feature-rich system monitoring application built with Python th
 - **Anomaly Detection**: Identifies unusual system behavior with detailed analysis
 - **Interactive AI Buttons**: Dedicated buttons for predictions and anomaly detection
 
-### 💬 Virtual Assistant
+### Virtual Assistant
 - **Conversational Interface**: Chat-based interaction for system queries
 - **Quick Command Buttons**: One-click access to common information:
   - CPU details
@@ -53,15 +55,15 @@ A sophisticated, feature-rich system monitoring application built with Python th
 - **Natural Language Processing**: Ability to understand and respond to queries about system performance
 - **Contextual Responses**: Provides relevant system information based on user questions
 
-### 📝 Smart Recommendations
+### Smart Recommendations
 - **System Warnings**: Alerts when resource usage approaches high levels
 - **Optimization Suggestions**:
-  - CPU optimization recommendations (e.g., "CPU usage is optimal at 1.1%")
-  - Memory optimization tips (e.g., "Elevated memory usage at 65.6%")
-  - Application management advice (e.g., "Restart memory-intensive applications periodically")
+  - CPU optimization recommendations
+  - Memory optimization tips
+  - Application management advice
 - **Resource Management Tips**: Contextual advice based on current system state
 
-## 🛠️ Technical Implementation
+## Technical Implementation
 
 ### Architecture
 The application follows a modular architecture with clear separation of concerns:
@@ -127,7 +129,7 @@ ProcessMonitoringOs/
   - Informative tooltips on hover
 - Process list with sortable columns and search functionality
 
-## 💡 Advanced Features
+## Advanced Features
 
 ### Process Intelligence
 The Process Intelligence feature provides deep insights into system processes:
@@ -140,7 +142,7 @@ The Process Intelligence feature provides deep insights into system processes:
 - **Process Categorization**:
   - **System Processes**: Core OS components (e.g., System, Registry)
   - **Background Services**: Services running without user interaction
-  - **User Applications**: Programs launched by the user (e.g., Windsurf.exe)
+  - **User Applications**: Programs launched by the user
   - **Development Tools**: Programming and development utilities
   - **Media & Graphics**: Audio/video/graphics applications
   - **Network Services**: Internet and network-related processes
@@ -205,7 +207,7 @@ The integrated virtual assistant provides an intuitive interface for system inte
   - Troubleshooting suggestions
   - Feature explanations and tips
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Python 3.8 or higher
@@ -221,7 +223,7 @@ The integrated virtual assistant provides an intuitive interface for system inte
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/ProcessMonitoringOs.git
+git clone https://github.com/Sayandip-Jana-1018/ProcessMonitoringOs.git
 ```
 
 2. Install required packages:
@@ -234,7 +236,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-## 🎨 Themes
+## Themes
 
 The application features a vibrant, modern UI with a customizable color scheme:
 
@@ -245,7 +247,7 @@ The application features a vibrant, modern UI with a customizable color scheme:
   - Clean, readable fonts for all text elements
   - Consistent styling across all components
 
-## 📈 Performance Considerations
+## Performance Considerations
 
 - **Efficient Resource Usage**:
   - The application is optimized to use minimal resources while monitoring
@@ -262,7 +264,7 @@ The application features a vibrant, modern UI with a customizable color scheme:
   - Non-blocking updates for performance graphs
   - Throttled refresh rates for smooth operation
 
-## 🔧 Customization
+## Customization
 
 Users can customize various aspects of the application:
 
@@ -281,13 +283,20 @@ Users can customize various aspects of the application:
   - Sensitivity settings for anomaly detection
   - Prediction horizon for forecasting
 
-## 👥 Contributors
+## Contributors
 
 - Sayandip Jana
 - Mohit Kumar Mishra
 - Anurag Pandey
 
-## 📝 License
+### Innovative Enhancements
+Beyond the basics, consider these innovative additions:
+- **Process Grouping**: Group processes by application or user in the `Treeview` for better organization.  
+- **Snapshot Feature**: Save current process states to a CSV file for later comparison.  
+- **Remote Monitoring (Future)**: Use `paramiko` for SSH to monitor remote machines.  
+- **Predictive Alerts**: Forecast system overload based on trends and alert administrators.  
+
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
